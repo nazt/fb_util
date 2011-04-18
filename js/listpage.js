@@ -3,14 +3,14 @@ window.get_result = function () {
   $('#results').html('Please wait, processing ...');
 /*
   var range_begin = $('#date-begin').datepicker('getDate').getTime();
-  var range_tmp = $('#date-end').datepicker('getDate').getTime(); 
-  var range_end = new Date(range_tmp).setHours(17,0,0); 
+  var range_tmp = $('#date-end').datepicker('getDate').getTime();
+  var range_end = new Date(range_tmp).setHours(17,0,0);
   if (typeof console != undefined)
     console.log(range_end, new Date(range_end));
 
-  generate_result(range_begin/1000, range_end/1000); 
+  generate_result(range_begin/1000, range_end/1000);
   */
-  generate_result(ndaysago(7).getTime()/1000, today().getTime()/1000); 
+  generate_result(ndaysago(3).getTime()/1000, today().getTime()/1000);
 }
 window.post_id_list = [];
 window.create_post_id_to_check = function(list)  {
@@ -21,8 +21,8 @@ window.create_post_id_to_check = function(list)  {
   output = output.join(',');
   output = "(" + output.toString() + ")";
   return output;
-} 
-window.generate_result = function(range_begin, range_end) { 
+}
+window.generate_result = function(range_begin, range_end) {
   var query =
     "SELECT post_id, attachment, likes, created_time, actor_id, message, permalink " +
     "FROM stream " +
@@ -39,7 +39,7 @@ window.generate_result = function(range_begin, range_end) {
      "SELECT uid, name " +
      "FROM user " +
      "WHERE uid in " +
-     "(SELECT actor_id from {0})", posts); 
+     "(SELECT actor_id from {0})", posts);
   FB.Data.waitOn([posts, users], function() {
     $('#results').html('');
     var user_list = {};
@@ -57,12 +57,12 @@ window.generate_result = function(range_begin, range_end) {
         var item = generate_item(picture, post, actor, created);
         post_id_list.push(post.post_id);
         $('#results').append(item);
-        $('#results-count').html($('#results li').size() + " results"); 
-         
+        $('#results-count').html($('#results li').size() + " results");
+
         FB.Canvas.setSize();
       }
-    }); 
-  }); 
+    });
+  });
 }
 
 window.generate_item = function(picture, post, actor, created) {
@@ -71,22 +71,22 @@ window.generate_item = function(picture, post, actor, created) {
   if (typeof console != undefined)
     console.log(post);
     */
-  console.log(arguments);
   try {
     item = "\
     <li>\
-      <div class='item-like'>\
-        <span class='item-like-count'>" + post.likes.count + "</span>\
+      <div class='item-profile'>\
         <img src='" + picture + "'>\
-            </div>\
-            <div class='item-info'>\
-        <div class='item-author'>\
-          by: \
-          <a href='http://facebook.com/profile.php?id=" + actor.uid + "'>" + actor.name + "</a>\
-          when: <em>" + created.format('mmmm dd, yyyy HH:MM') + "</em>\
-        </div>\
-        <div class='item-message'>" + post.message + "</div>\
-        <div class='item-permalink'>link: <a href='" + post.permalink + "'>" + post.permalink + "</a></div>\
+      </div> \
+        <div class='item-info'>\
+          <div class='item-author'>\
+            <a href='http://facebook.com/profile.php?id=" + actor.uid + "'>" + actor.name + "</a>\
+            <em>" + created.format('mmmm dd, yyyy HH:MM') + "</em>\
+          </div>\
+          <div class='item-message'>" + post.message + "</div>\
+          <div class='item-permalink'>link: <a href='" + post.permalink + "'>" + post.permalink + "</a></div>\
+      </div>\
+      <div class='item-like'> \
+        <span class='item-like-count'>" + post.likes.count + "</span>\
       </div>\
       <div style='clear:both'></div>\
     </li>";
@@ -94,8 +94,8 @@ window.generate_item = function(picture, post, actor, created) {
   catch (err) {
     if (typeof console != undefined)
       console.log(err);
-  } 
-  return item; 
+  }
+  return item;
 }
 
 window.today = function() {
@@ -125,17 +125,16 @@ window.fbAsyncInit = function() {
   });
   FB.Canvas.setAutoResize(91);
   FB.getLoginStatus(function(response) {
-  if (response.session) {
-    console.log('logged in'); 
-    get_result();
-  }
-  else {
-    console.log('redirect');
-    var login_url = "http://vacation.opendream.in.th/?scope=email,user_birthday&client_id=" + Drupal.settings.fb_util.appid +"&redirect_uri=http://vacation.opendream.in.th/facebook/util/verify.php&response_type=code_and_token&display=page";
-    top.window.location.href = login_url 
-  }
-
-});
+    if (response.session) {
+      console.log('logged in');
+      get_result();
+    }
+    else {
+      console.log('redirect');
+      var login_url = "http://vacation.opendream.in.th/?scope=email,user_birthday&client_id=" + Drupal.settings.fb_util.appid +"&redirect_uri=http://vacation.opendream.in.th/facebook/util/verify.php&response_type=code_and_token&display=page";
+      top.window.location.href = login_url;
+    }
+  });
 };
 
 (function() {
