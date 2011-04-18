@@ -1,0 +1,37 @@
+li {
+  list-style: none;
+}
+
+li a {
+  text-decoration: none;
+  white-space: nowrap;
+  text-indent: -999em;
+}
+
+ul.category-wrapper li a {
+  background-image: url(http://happyschoolbreak.com/sites/all/themes/genesis_openwebmini/images/nav-menu.png);
+  width: 173px;
+  height: 79px;
+  float: left;
+  overflow: hidden;
+}
+
+.cate-221 a { 
+  background-position: 0 0;
+}
+
+.cate-225 a {
+  background-position: -183px 0;
+}
+
+.cate-222 a {
+  background-position: -366px 0;
+}
+
+.cate-223 a {
+  background-position: -549px 0;
+}
+
+.cate-224  a {
+  background-position: -732px 0;
+}

@@ -1,0 +1,117 @@
+<?php
+/**
+ * Implementation of hook_init().
+ */
+function fb_util_init() {
+
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function fb_util_menu() {
+  $items['admin/settings/fb_util'] = array(
+      'title' => 'Facebook Util',
+      'description' => 'Facebook util settings',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('fb_util_settings_form'),
+      'access arguments' => 'administer site configuration',
+      'type' => MENU_NORMAL_ITEM,
+      'file' => 'fb_util.admin.inc'
+  );
+
+  $items['facebook/util/category/list'] = array(
+    'title' => t('List Category'),
+    'page callback' => 'list_category',
+    'access arguments' => TRUE,
+    'type' => MENU_CALLBACK,
+  ); 
+
+  $items['facebook/page/idea/list'] = array(
+      'title' => t('List idea'),
+      'page callback' => 'show_list_idea_page',
+      'type', MENU_CALLBACK,
+      'access arguments' => 'access content',
+      'file' => 'list_idea.inc',
+  ); 
+
+  $items['facebook/util/idea/post'] = array(
+    'title' => t('Post Idea'),
+    'page callback' => 'post_idea',
+    'access arguments' => 'access content',
+    'type' => MENU_CALLBACK,
+  ); 
+
+  $items['facebook/page/idea/post'] = array(
+      'title' => 'Show Tab Page',
+      'page callback' => 'show_post_idea_page',
+      'access arguments' => TRUE,
+      'type' => MENU_CALLBACK,
+      'file' => 'post_idea.inc');
+
+  return $items; 
+}
+
+
+function post_idea() {
+  $app_secret = variable_get('fb_util_app_secret_key', '');
+  $fb_session = json_decode($_POST['fb_util_data'], TRUE);
+  $fbuid = $fb_sesson->uid;
+  $validated_session = validate_facebook_session($fb_session, $app_secret);
+  $fb_drupal = json_decode($_POST['fb_util_drupal']);
+  if ($validated_session) {
+    $tid = $fb_drupal->tid;
+    $orig = node_load();
+    $node = $orig;
+    $node->type = 'idea';
+    $node->body = $fb_drupal->message;
+    $node->title = $validated_session['uid'];
+    $node->field_fbuid[0]['value'] = $validated_session['uid'];
+    $node->field_facebook_post_id[0]['value'] = $fb_drupal->post_id;
+    $node->field_facebook_session[0]['value'] = $_POST['fb_util_data'];
+    $node->field_facebook_post_object[0]['value'] = $_POST['fb_post_object'];
+    $node->taxonomy = array($tid => taxonomy_get_term($tid)); 
+
+    node_save($node); 
+
+    if ($node->changed != $orig->changed) {
+       print 'Updated';
+    }
+    else {
+      print 'Unable to update.';
+    } 
+  }
+  else {
+    print 'fail';
+  }
+
+  return ;
+
+}
+
+function list_idea() {
+  return "LIST IDEA";
+}
+function list_category() {
+  $node = taxonomy_select_nodes(array(225));
+  $node = db_fetch_object($node);
+  drupal_set_message(print_r($node, 1));
+  return 'List Category ';
+}
+
+function validate_facebook_session($args, $app_secret) {
+  $payload = '';
+  ksort($args);
+  foreach ($args as $key => $value) {
+    if ($key != 'sig') {
+      $payload .= $key . '=' . $value;
+    }
+  }
+  $hash_in = $payload . $app_secret;
+  $sig = $args['sig'];
+  if (md5($hash_in) != $sig) {
+    return null;
+  }
+  return $args;
+}
+
