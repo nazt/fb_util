@@ -1,10 +1,10 @@
 <?php
-function show_list_idea_page() { 
+function show_list_idea_page() {
   $css_path = drupal_get_path('module', 'fb_util') . '/css/custom_style.css';
   $js_path  = drupal_get_path('module', 'fb_util') . '/js/listpage.js';
   drupal_add_css($css_path);
   drupal_add_js($js_path);
-       
+
   $js_date_format= drupal_get_path('module', 'fb_util') . '/js/date.format.minified.js';
 
   $api_key = variable_get('fb_util_app_api_key', '');
@@ -15,28 +15,28 @@ function show_list_idea_page() {
   drupal_add_js($js_date_format);
 
   $activity_term_tree = taxonomy_get_tree(11);
-  $li_string = ""; 
+  $li_string = "";
   foreach ($activity_term_tree as $term) {
     $li_string .= generate_activity_li($term);
   }
 
   $output = <<<FBJS
-    <div id="fb-root"></div> 
-    <div id="like-count"> 
-        <div id="date-control"> 
-          from: <input type="text" id="date-begin"> 
-          to: <input type="text" id="date-end"> 
-          <button id="get-result">Get Result</button> 
-          <div><em id="results-count"></em></div> 
-        </div> 
-        <ul id="results"> </ul> 
-    </div> 
+    <div id="fb-root"></div>
+    <div id="like-count">
+        <div id="date-control">
+          from: <input type="text" id="date-begin">
+          to: <input type="text" id="date-end">
+          <button id="get-result">Get Result</button>
+          <div><em id="results-count"></em></div>
+        </div>
+        <ul id="results"> </ul>
+    </div>
 FBJS;
   return $output;
 }
 
-function generate_activity_li($term) { 
+function generate_activity_li($term) {
   $li = sprintf("<li class=\"cate-%s\"> <a href=\"#\" tid=\"%s\" class=\"category-item\">%s</a> <li>\n", $term->tid, $term->tid, $term->name);
 
-  return $li; 
+  return $li;
 }

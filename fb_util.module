@@ -25,7 +25,7 @@ function fb_util_menu() {
     'page callback' => 'list_category',
     'access arguments' => TRUE,
     'type' => MENU_CALLBACK,
-  ); 
+  );
 
   $items['facebook/page/idea/list'] = array(
       'title' => t('List idea'),
@@ -33,14 +33,14 @@ function fb_util_menu() {
       'type', MENU_CALLBACK,
       'access arguments' => 'access content',
       'file' => 'list_idea.inc',
-  ); 
+  );
 
   $items['facebook/util/idea/post'] = array(
     'title' => t('Post Idea'),
     'page callback' => 'post_idea',
     'access arguments' => 'access content',
     'type' => MENU_CALLBACK,
-  ); 
+  );
 
   $items['facebook/page/idea/post'] = array(
       'title' => 'Show Tab Page',
@@ -49,7 +49,7 @@ function fb_util_menu() {
       'type' => MENU_CALLBACK,
       'file' => 'post_idea.inc');
 
-  return $items; 
+  return $items;
 }
 
 
@@ -70,16 +70,16 @@ function post_idea() {
     $node->field_facebook_post_id[0]['value'] = $fb_drupal->post_id;
     $node->field_facebook_session[0]['value'] = $_POST['fb_util_data'];
     $node->field_facebook_post_object[0]['value'] = $_POST['fb_post_object'];
-    $node->taxonomy = array($tid => taxonomy_get_term($tid)); 
+    $node->taxonomy = array($tid => taxonomy_get_term($tid));
 
-    node_save($node); 
+    node_save($node);
 
     if ($node->changed != $orig->changed) {
        print 'Updated';
     }
     else {
       print 'Unable to update.';
-    } 
+    }
   }
   else {
     print 'fail';

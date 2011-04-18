@@ -33,5 +33,5 @@ function fb_util_settings_form() {
   );
 
 
-  return system_settings_form($form); 
-} 
+  return system_settings_form($form);
+}
