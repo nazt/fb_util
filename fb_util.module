@@ -15,7 +15,7 @@ function fb_util_menu() {
       'description' => 'Facebook util settings',
       'page callback' => 'drupal_get_form',
       'page arguments' => array('fb_util_settings_form'),
-      'access arguments' => 'administer site configuration',
+      'access arguments' => array('administer site configuration'),
       'type' => MENU_NORMAL_ITEM,
       'file' => 'fb_util.admin.inc'
   );
@@ -23,29 +23,48 @@ function fb_util_menu() {
   $items['facebook/util/category/list'] = array(
     'title' => t('List Category'),
     'page callback' => 'list_category',
-    'access arguments' => TRUE,
+    'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
   );
+
+  $items['facebook/util/idea/list'] = array(
+      'title' => t('List Idea Utility'),
+      'page callback' => 'list_idea_util',
+      'access arguments' => array('access content'),
+      'type' => MENU_CALLBACK,
+  );
+
+  $item_tmp = $items['facebook/util/idea/list'];
+  $item_tmp['page arguments'] = array(4);
+  $items['facebook/util/idea/list%'] = $item_tmp;
+
 
   $items['facebook/page/idea/list'] = array(
       'title' => t('List idea'),
       'page callback' => 'show_list_idea_page',
       'type', MENU_CALLBACK,
-      'access arguments' => 'access content',
+      'access arguments' => array('access content'),
       'file' => 'list_idea.inc',
   );
 
   $items['facebook/util/idea/post'] = array(
     'title' => t('Post Idea'),
     'page callback' => 'post_idea',
-    'access arguments' => 'access content',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['facebook/util/verify'] = array(
+    'title' => t('Verify FB'),
+    'page callback' => 'verify_js',
+    'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
   );
 
   $items['facebook/page/idea/post'] = array(
       'title' => 'Show Tab Page',
       'page callback' => 'show_post_idea_page',
-      'access arguments' => TRUE,
+      'access arguments' => array('access content'),
       'type' => MENU_CALLBACK,
       'file' => 'post_idea.inc');
 
@@ -92,13 +111,50 @@ function post_idea() {
 function list_idea() {
   return "LIST IDEA";
 }
+
+function list_idea_util($term_id = NULL) {
+  print 'list_idea_util';
+  if ($term_id) {
+    $selection = array($term_id);
+  }
+  else {
+    $selection = array();
+    $activity_term_tree = taxonomy_get_tree(11);
+    foreach ($activity_term_tree as $term) {
+      array_push($selection, $term->tid);
+    }
+  }
+  $node = taxonomy_select_nodes($selection) ;
+  while($data = db_fetch_object($node)) {
+    $data_load = node_load($data->nid);
+    if (is_node_type(&$data_load, 'idea')) {
+      print_r($data_load);
+    }
+  }
+  return;
+}
 function list_category() {
-  $node = taxonomy_select_nodes(array(225));
-  $node = db_fetch_object($node);
-  drupal_set_message(print_r($node, 1));
-  return 'List Category ';
+  print 'd';
+  return;
 }
 
+function load_nid_in_type($node_type) {
+  $result = db_query("SELECT nid FROM node WHERE type = %s", $node_type);
+
+  $nids = array();
+  while ($obj = db_fetch_object ($result)) {
+    $nids[] = $obj->nid;
+  }
+  return $nids;
+}
+
+function is_node_type(&$node, $node_type) {
+  $return_flag = FALSE;
+  if ($node->type == $node_type) {
+    $return_flag = TRUE;
+  }
+  return $return_flag;
+}
 function validate_facebook_session($args, $app_secret) {
   $payload = '';
   ksort($args);
@@ -113,5 +169,22 @@ function validate_facebook_session($args, $app_secret) {
     return null;
   }
   return $args;
+}
+// unused for now
+function select_nodes_by_content_type_not_in_vocabulary($vocab_id, $content_type){
+	$result = db_query(
+	   "SELECT * FROM {node} WHERE nid NOT IN (
+		SELECT nid FROM {term_node} AS tn
+		LEFT JOIN {term_data} AS td ON tn.tid = td.tid
+		WHERE td.vid = %d)
+		AND type = '%s'", $vocab_id , $content_type
+	);
+	return $result;
+}
+
+function verify_js() {
+  Header('Location: http://www.facebook.com/pages/%E0%B8%9B%E0%B8%B4%E0%B8%94%E0%B9%80%E0%B8%97%E0%B8%AD%E0%B8%A1%E0%B8%AA%E0%B8%A3%E0%B9%89%E0%B8%B2%E0%B8%87%E0%B8%AA%E0%B8%A3%E0%B8%A3%E0%B8%84%E0%B9%8C/220551554627180');
+  //print "VERIFY";
+  return;
 }
 

@@ -23,12 +23,7 @@ function show_list_idea_page() {
   $output = <<<FBJS
     <div id="fb-root"></div>
     <div id="like-count">
-        <div id="date-control">
-          from: <input type="text" id="date-begin">
-          to: <input type="text" id="date-end">
-          <button id="get-result">Get Result</button>
-          <div><em id="results-count"></em></div>
-        </div>
+        <div class="msg-sort"><p class="msg-sort-label">เรียงตาม:</p><ul><li><a href="/connect" class="day7 active">สูงสุดใน 7 วัน</a></li><li><a href="/connect/popular/30days" class="day30">30 วัน</a></li><li><a href="/connect/popular/365days" class="day365">365 วัน</a></li><li><a href="/connect/popular/recent" class="recent">ล่าสุด</a></li></ul></div>
         <ul id="results"> </ul>
     </div>
 FBJS;

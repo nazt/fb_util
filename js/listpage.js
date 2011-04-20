@@ -92,8 +92,10 @@ window.generate_item = function(picture, post, actor, created) {
     </li>";
   }
   catch (err) {
-    if (typeof console != undefined)
+    if(typeof(console) !== 'undefined' && console != null) {
       console.log(err);
+    }
+
   }
   return item;
 }
@@ -126,11 +128,16 @@ window.fbAsyncInit = function() {
   FB.Canvas.setAutoResize(91);
   FB.getLoginStatus(function(response) {
     if (response.session) {
-      console.log('logged in');
+      if(typeof(console) !== 'undefined' && console != null) {
+        console.log('logged in');
+      }
+
       get_result();
     }
     else {
-      console.log('redirect');
+      if(typeof(console) !== 'undefined' && console != null) {
+        console.log('redirect');
+      }
       var login_url = "http://vacation.opendream.in.th/?scope=email,user_birthday&client_id=" + Drupal.settings.fb_util.appid +"&redirect_uri=http://vacation.opendream.in.th/facebook/util/verify.php&response_type=code_and_token&display=page";
       top.window.location.href = login_url;
     }

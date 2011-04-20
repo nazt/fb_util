@@ -14,16 +14,16 @@ function show_post_idea_page() {
 
   $activity_term_tree = taxonomy_get_tree(11);
   $li_string = "";
+
   foreach ($activity_term_tree as $term) {
     $li_string .= generate_activity_li($term);
   }
 
   $output = <<<FBJS
       <div id="fb-root"></div>
-      <fb:like-box href="http://www.facebook.com/together.in.th" width="292" show_faces="false" stream="false" header="false"></fb:like-box>
 
       <ul class="category-wrapper hidden">
-        $li_string;
+        $li_string
       </ul>
 
       <script type="text/javascript">

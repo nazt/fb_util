@@ -8,13 +8,14 @@ window.fbAsyncInit = function() {
   FB.Canvas.setAutoResize(90);
   FB.getLoginStatus(function(response) {
     if (response.session) {
-      console.log('logged in'); 
+      console.log('logged in');
       $('.category-wrapper').removeClass('hidden');
+      $('body').show();
     }
     else {
       console.log('redirect');
-      var login_url = "http://vacation.opendream.in.th/?scope=email,user_birthday&client_id=" + Drupal.settings.fb_util.appid +"&redirect_uri=http://vacation.opendream.in.th/facebook/util/verify.php&response_type=code_and_token&display=page";
-      top.window.location.href = login_url 
+      var login_url = "http://www.facebook.com/dialog/oauth/?scope=publish_stream,email,user_birthday&client_id=" + Drupal.settings.fb_util.appid +"&redirect_uri=http://vacation.opendream.in.th/facebook/util/verify&response_type=code_and_token&display=page";
+      top.window.location.href = login_url
     }
 
   });
@@ -28,25 +29,26 @@ var prepare_data_ui = function(to, category) {
       picture: 'http://fbrell.com/f8.jpg',
       caption: 'Category: '+ category,
       message: 'Enter your idea!',
-      description: ' ', 
+      description: ' ',
       to: to
     };
   return data_ui;
 }
 
 $(function() {
-  //$('.category-wrapper').hide();
+  $('body').hide();
 });
 
 $('.category-item').live('click', function(e) {
   e.preventDefault();
   var self = $(this);
-  console.log(self.parent(), self, self.html()); 
+  console.log(self.parent(), self, self.html());
   var category = self.html();
   var post_to = Drupal.settings.fb_util.pageid || '153305968014537';
   var data_ui = prepare_data_ui(post_to, category);
   var session_string = JSON.stringify(FB.getSession());
   var tid = self.attr('tid');
+  console.log('data_ui', data_ui);
   FB.ui(data_ui, function(response) {
   if (response && response.post_id) {
     console.log('Post was published.');
@@ -58,7 +60,7 @@ $('.category-item').live('click', function(e) {
       console.log('response', response);
       console.log('data to send', data_object_to_send);
       jQuery.post('/facebook/util/idea/post', data_object_to_send , function(resp) {
-        console.log(resp); 
+        console.log(resp);
       });
     });
   }
@@ -66,4 +68,4 @@ $('.category-item').live('click', function(e) {
      console.log('Post was not published.');
    }
   });//ui
-});//live 
+});//live
