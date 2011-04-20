@@ -1,6 +1,6 @@
 
 window.get_result = function () {
-  $('#results').html('Please wait, processing ...');
+  $('#results').html('<p class="loading">Please wait, processing ...</p>');
 /*
   var range_begin = $('#date-begin').datepicker('getDate').getTime();
   var range_tmp = $('#date-end').datepicker('getDate').getTime();
@@ -26,15 +26,16 @@ window.generate_result = function(range_begin, range_end) {
   var query =
     "SELECT post_id, attachment, likes, created_time, actor_id, message, permalink " +
     "FROM stream " +
-    "WHERE source_id = {0} AND " +
-           "actor_id != '151383371550838' AND " +
+    "WHERE source_id = {0} "
+/*           "actor_id != '220551554627180' AND " +
            "created_time > '" + range_begin + "' AND " +
-           "created_time <= '" + range_end + "' AND " +
-           "likes.count > 0" +
-    "ORDER BY likes.count DESC " +
+           "created_time <= '" + range_end + "' " + */
+/*           "AND likes.count > 0 " +
+    "ORDER BY likes.count DESC " + */
+      "ORDER BY created_time DESC " +
     "LIMIT 256";
 
-  var posts = FB.Data.query(query, '151383371550838');
+  var posts = FB.Data.query(query, '220551554627180');
   var users = FB.Data.query(
      "SELECT uid, name " +
      "FROM user " +
@@ -54,12 +55,26 @@ window.generate_result = function(range_begin, range_end) {
         var actor = user_list[post.actor_id];
         var created = new Date(post.created_time * 1000);
         var picture = "http://graph.facebook.com/" + post.actor_id + "/picture";
-        var item = generate_item(picture, post, actor, created);
-        post_id_list.push(post.post_id);
-        $('#results').append(item);
-        $('#results-count').html($('#results li').size() + " results");
 
-        FB.Canvas.setSize();
+        jQuery.getJSON('/facebook/util/getnode/' + post.post_id, function(res) {
+          var category = '';
+          if (res.length>0) {
+            var item = generate_item(picture, post, actor, created);
+            post_id_list.push(post.post_id);
+            $('#results').append(item);
+            $('#results-count').html($('#results li').size() + " results");
+            FB.Canvas.setSize();
+            category = res[0].name;
+            jQuery('li[post_id='+post.post_id+']').addClass('category-'+res[0].tid);
+          }
+          else {
+            item = "";
+            jQuery('li[post_id='+post.post_id+']').remove();
+            if(typeof(console) !== 'undefined' && console != null) {
+              console.log('Problem', post);
+            }
+          }
+        });//getJSON
       }
     });
   });
@@ -73,24 +88,23 @@ window.generate_item = function(picture, post, actor, created) {
     */
   try {
     item = "\
-    <li>\
-      <div class='item-profile'>\
-        <img src='" + picture + "'>\
-      </div> \
-        <div class='item-info'>\
-          <div class='item-author'>\
-            <a href='http://facebook.com/profile.php?id=" + actor.uid + "'>" + actor.name + "</a>\
-            <em>" + created.format('mmmm dd, yyyy HH:MM') + "</em>\
-          </div>\
-          <div class='item-message'>" + post.message + "</div>\
-          <div class='item-permalink'>link: <a href='" + post.permalink + "'>" + post.permalink + "</a></div>\
-      </div>\
-      <div class='item-like'> \
-        <span class='item-like-count'>" + post.likes.count + "</span>\
-      </div>\
-      <div style='clear:both'></div>\
-    </li>";
-  }
+      <li class='user-idea' post_id="+ post.post_id +">\
+        <div class='item-profile'>\
+          <img src='" + picture + "'>\
+        </div> \
+          <div class='item-info'>\
+            <div class='item-author'>\
+              <a href='http://facebook.com/profile.php?id=" + actor.uid + "'>" + actor.name + "</a>\
+              <em>" + created.format('mmmm dd, yyyy HH:MM') + "</em>\
+            </div>\
+            <div class='item-message'>" + post.message + "</div>\ <div class='item-permalink'><!--link: <a href='" + post.permalink + "'>" + post.permalink + "</a> !--></div>\ </div>\
+        <div class='item-like'> \
+          <span class='item-like-count'>" + post.likes.count + "</span>\
+          <span class='item-like-button'></span>\
+        </div>\
+        <div style='clear:both'></div>\
+      </li>";
+  }// try
   catch (err) {
     if(typeof(console) !== 'undefined' && console != null) {
       console.log(err);
@@ -166,3 +180,17 @@ jQuery(document).ready(function ($) {
   $('#get-result').click(function (e) {  });
 });
 
+$('.category-item').live('click', function(e) {
+    var self = $(this);
+    var tid = self.attr('tid');
+    var user_idea_selector = '.user-idea.category-'+tid;
+    if (tid == 'all') {
+      $('.user-idea').show();
+    }
+    else {
+      $('.user-idea').hide();
+    }
+    $('.category-item').removeClass('active');
+    self.addClass('active');
+    $(user_idea_selector).show();
+});

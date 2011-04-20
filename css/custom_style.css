@@ -1,5 +1,6 @@
 li {
   list-style: none;
+  margin: 0 20px
 }
 
 li a {
@@ -7,31 +8,43 @@ li a {
   white-space: nowrap;
   text-indent: -999em;
 }
-
+ul.category-wrapper {padding: 0;}
+ul.category-wrapper li {width: 181px; float: left}
 ul.category-wrapper li a {
-  background-image: url(http://happyschoolbreak.com/sites/all/themes/genesis_openwebmini/images/nav-menu.png);
+/*  background-image: url(../images/);
   width: 173px;
   height: 79px;
   float: left;
-  overflow: hidden;
+  overflow: hidden;*/
+  width: 181px;
+  height: 75px;
+  display: block;
+}
+
+.cate-221, .cate-225, .cate-222, .cate-223, .cate-224 {
+  margin: 0 0 10px 30px;
+}
+.cate-224 {
+  margin: 0 0 0 140px
 }
 
 .cate-221 a { 
-  background-position: 0 0;
+  background: url(../images/btn-01.jpg) no-repeat
 }
 
 .cate-225 a {
-  background-position: -183px 0;
+  background: url(../images/btn-02.jpg) no-repeat;
 }
 
 .cate-222 a {
-  background-position: -366px 0;
+  background: url(../images/btn-03.jpg) no-repeat;
 }
 
 .cate-223 a {
-  background-position: -549px 0;
+  background: url(../images/btn-04.jpg) no-repeat;
 }
 
 .cate-224  a {
-  background-position: -732px 0;
+  background: url(../images/btn-05.jpg) no-repeat;
 }
+

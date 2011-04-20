@@ -61,6 +61,14 @@ function fb_util_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $items['facebook/util/getnode/%'] = array(
+      'title' => 'Get Node',
+      'page arguments' => array(3),
+      'access arguments' => array('access content'),
+      'page callback' => 'get_node_from_facebook_post_id',
+      'type' => MENU_CALLBACK,
+  );
+
   $items['facebook/page/idea/post'] = array(
       'title' => 'Show Tab Page',
       'page callback' => 'show_post_idea_page',
@@ -134,7 +142,8 @@ function list_idea_util($term_id = NULL) {
   return;
 }
 function list_category() {
-  print 'd';
+  $activity_term_tree = taxonomy_get_tree(11);
+  print drupal_json($activity_term_tree);
   return;
 }
 
@@ -171,6 +180,7 @@ function validate_facebook_session($args, $app_secret) {
   return $args;
 }
 // unused for now
+/*
 function select_nodes_by_content_type_not_in_vocabulary($vocab_id, $content_type){
 	$result = db_query(
 	   "SELECT * FROM {node} WHERE nid NOT IN (
@@ -181,10 +191,19 @@ function select_nodes_by_content_type_not_in_vocabulary($vocab_id, $content_type
 	);
 	return $result;
 }
+*/
 
 function verify_js() {
   Header('Location: http://www.facebook.com/pages/%E0%B8%9B%E0%B8%B4%E0%B8%94%E0%B9%80%E0%B8%97%E0%B8%AD%E0%B8%A1%E0%B8%AA%E0%B8%A3%E0%B9%89%E0%B8%B2%E0%B8%87%E0%B8%AA%E0%B8%A3%E0%B8%A3%E0%B8%84%E0%B9%8C/220551554627180');
-  //print "VERIFY";
   return;
 }
 
+function get_node_from_facebook_post_id($post_id) {
+  $node_status_code = 1;
+  $query = sprintf("SELECT node.nid AS nid FROM node node  LEFT JOIN content_type_idea node_data_field_facebook_post_id ON node.vid = node_data_field_facebook_post_id.vid WHERE (node_data_field_facebook_post_id.field_facebook_post_id_value) = ('%s') AND node.status = %d", $post_id, $node_status_code);
+  $nid = db_result(db_query($query));
+  $node = node_load($nid);
+  $term = taxonomy_node_get_terms($node);
+  drupal_json(array_values($term));
+  return;
+}

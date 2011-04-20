@@ -17,21 +17,31 @@ function show_list_idea_page() {
   $activity_term_tree = taxonomy_get_tree(11);
   $li_string = "";
   foreach ($activity_term_tree as $term) {
-    $li_string .= generate_activity_li($term);
+    $alias = taxonomy_get_synonyms($term->tid);
+    $li_string .= generate_activity_li($term, $alias);
   }
 
   $output = <<<FBJS
     <div id="fb-root"></div>
     <div id="like-count">
-        <div class="msg-sort"><p class="msg-sort-label">เรียงตาม:</p><ul><li><a href="/connect" class="day7 active">สูงสุดใน 7 วัน</a></li><li><a href="/connect/popular/30days" class="day30">30 วัน</a></li><li><a href="/connect/popular/365days" class="day365">365 วัน</a></li><li><a href="/connect/popular/recent" class="recent">ล่าสุด</a></li></ul></div>
+        <div class="msg-sort">
+          <p class="msg-sort-label">หมวดหมู่:</p>
+          <ul>
+            <li class="cate-all"> <a href="#" tid="all" class="category-item active">ทั้งหมด</a> <li>
+            $li_string
+          </ul>
+         </div>
         <ul id="results"> </ul>
     </div>
 FBJS;
   return $output;
 }
 
-function generate_activity_li($term) {
-  $li = sprintf("<li class=\"cate-%s\"> <a href=\"#\" tid=\"%s\" class=\"category-item\">%s</a> <li>\n", $term->tid, $term->tid, $term->name);
+function generate_activity_li($term, &$alias = NULL) {
+  if (!empty($alias[0])) {
+    $term->name = $alias[0];
+  }
+  $li = sprintf("<li class=\"category-menu cate-%s\"> <a href=\"#\" tid=\"%s\" class=\"category-item\">%s</a> <li>\n", $term->tid, $term->tid, $term->name);
 
   return $li;
 }
