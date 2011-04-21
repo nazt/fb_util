@@ -21,8 +21,7 @@ function show_post_idea_page() {
 
   $output = <<<FBJS
       <div id="fb-root"></div>
-
-      <ul class="category-wrapper hidden">
+      <ul class="category-wrapper idea-rule-top hidden ">
         $li_string
       </ul>
 

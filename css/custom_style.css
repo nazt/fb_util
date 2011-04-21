@@ -1,3 +1,10 @@
+#container .idea-rule-top{
+  background: url(../images/h2-ideas-post.png) no-repeat;
+  width: 470px;
+  height: 401px;
+  padding: 410px 10px 0;
+}
+
 li {
   list-style: none;
   margin: 0 20px
@@ -24,7 +31,7 @@ ul.category-wrapper li a {
 .cate-221, .cate-225, .cate-222, .cate-223, .cate-224 {
   margin: 0 0 10px 30px;
 }
-.cate-224 {
+.cate-225 {
   margin: 0 0 0 140px
 }
 
@@ -44,7 +51,7 @@ ul.category-wrapper li a {
   background: url(../images/btn-04.jpg) no-repeat;
 }
 
-.cate-224  a {
+.cate-224 a {
   background: url(../images/btn-05.jpg) no-repeat;
 }
 

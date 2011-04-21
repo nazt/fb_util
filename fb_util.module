@@ -61,11 +61,43 @@ function fb_util_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $items['facebook/util/getnodeterm/%'] = array(
+      'title' => 'Get Node Term',
+      'page arguments' => array(3),
+      'access arguments' => array('access content'),
+      'page callback' => 'get_node_term_from_facebook_post_id',
+      'type' => MENU_CALLBACK,
+  );
+
+  $items['facebook/util/vote/get/%'] = array(
+      'title' => 'Get Vote Num',
+      'page arguments' => array(4),
+      'access arguments' => array('access content'),
+      'page callback' => 'page_get_vote_number_from_post_id',
+      'type' => MENU_CALLBACK,
+  );
+
+  $items['facebook/util/vote/toggle/%'] = array(
+      'title' => 'Add vote',
+      'page arguments' => array(4),
+      'access arguments' => array('access content'),
+      'page callback' => 'page_toggle_vote_number_from_post_id',
+      'type' => MENU_CALLBACK,
+  );
+
   $items['facebook/util/getnode/%'] = array(
       'title' => 'Get Node',
       'page arguments' => array(3),
       'access arguments' => array('access content'),
-      'page callback' => 'get_node_from_facebook_post_id',
+      'page callback' => 'page_get_node_from_facebook_post_id',
+      'type' => MENU_CALLBACK,
+  );
+
+  $items['facebook/util/delta/get/%/%'] = array(
+      'title' => 'Get Delta Number',
+      'access arguments' => array('access content'),
+      'page arguments' => array(4, 5),
+      'page callback' => 'page_get_delta_from_post_id',
       'type' => MENU_CALLBACK,
   );
 
@@ -194,11 +226,11 @@ function select_nodes_by_content_type_not_in_vocabulary($vocab_id, $content_type
 */
 
 function verify_js() {
-  Header('Location: http://www.facebook.com/pages/%E0%B8%9B%E0%B8%B4%E0%B8%94%E0%B9%80%E0%B8%97%E0%B8%AD%E0%B8%A1%E0%B8%AA%E0%B8%A3%E0%B9%89%E0%B8%B2%E0%B8%87%E0%B8%AA%E0%B8%A3%E0%B8%A3%E0%B8%84%E0%B9%8C/220551554627180');
+  Header('Location: http://www.facebook.com/happyschoolbreak?sk=app_210101249007908');
   return;
 }
 
-function get_node_from_facebook_post_id($post_id) {
+function get_node_term_from_facebook_post_id($post_id) {
   $node_status_code = 1;
   $query = sprintf("SELECT node.nid AS nid FROM node node  LEFT JOIN content_type_idea node_data_field_facebook_post_id ON node.vid = node_data_field_facebook_post_id.vid WHERE (node_data_field_facebook_post_id.field_facebook_post_id_value) = ('%s') AND node.status = %d", $post_id, $node_status_code);
   $nid = db_result(db_query($query));
@@ -206,4 +238,110 @@ function get_node_from_facebook_post_id($post_id) {
   $term = taxonomy_node_get_terms($node);
   drupal_json(array_values($term));
   return;
+}
+
+function page_get_node_from_facebook_post_id($post_id) {
+  $node = _get_node_from_facebook_post_id($post_id);
+  _get_delta_from_post_id($post_id, '8910');
+  drupal_json(($node));
+  return;
+}
+
+function _get_node_from_facebook_post_id($post_id) {
+  $node_status_code = 1;
+  $query = sprintf("SELECT node.vid AS vid, node.nid AS nid FROM node node  LEFT JOIN content_type_idea node_data_field_facebook_post_id ON node.vid = node_data_field_facebook_post_id.vid WHERE (node_data_field_facebook_post_id.field_facebook_post_id_value) = ('%s') AND node.status = %d", $post_id, $node_status_code);
+  $r = db_query($query);
+  $node = db_fetch_object($r);
+  //print get_delta_from_nid_fbuid($node->nid, '8910');
+  return $node;
+}
+
+function _get_delta_from_nid_fbuid($nid, $fbuid) {
+  $delta = db_result(db_query("SELECT delta FROM {content_field_fbuid_vote} WHERE field_fbuid_vote_value = '$fbuid' AND nid = '$nid'", $nid, $fbuid));
+  return $delta;
+}
+
+function _get_delta_from_post_id($post_id, $fbuid) {
+  $node = _get_node_from_facebook_post_id($post_id);
+  $delta = _get_delta_from_nid_fbuid($node->nid, $fbuid);
+  return $delta;
+}
+
+function page_get_delta_from_post_id($post_id, $fbuid) {
+  drupal_set_header('Content-Type: application/json; charset=utf-8');
+  //_insert_fbuid_to_node($post_id, $fbuid);
+  _get_vote_number_from_post_id($post_id);
+  drupal_json(array('delta' => _get_delta_from_post_id($post_id, $fbuid)));
+  return;
+}
+
+function _get_vote_number_from_post_id($post_id) {
+  $node = _get_node_from_facebook_post_id($post_id);
+  $node = node_load($node->nid);
+  $collection = array();
+  foreach ($node->field_fbuid_vote as $vote_fbuid) {
+    if (!empty($vote_fbuid['value'])) {
+      $collection[] = $vote_fbuid;
+    }
+  }
+  $vote_num =  count($collection);
+  return $vote_num;
+}
+
+function page_get_vote_number_from_post_id($post_id) {
+   $vote_num = _get_vote_number_from_post_id($post_id);
+   print drupal_json(array('votenum' => $vote_num));
+   return;
+}
+
+function page_toggle_vote_number_from_post_id($post_id) {
+  $fb_session = json_decode($_POST['fb_session']);
+  $fbuid = $fb_session->uid;
+
+  $result = array();
+
+  //Liked
+  $delta = _get_delta_from_post_id($post_id, $fbuid);
+  if ($delta) {
+    $node = _get_node_from_facebook_post_id($post_id);
+    if (_remove_fbuid_from_node($node->nid, $delta, $fbuid)) {
+      $result = array('status' => false, 'api_status' => 'passed');
+    }
+    else {
+      $result = array('status' => true, 'api_status' => 'failed');
+    }
+    $result['operation'] = 'remove';
+  }
+  else {
+    $inserted = _insert_fbuid_to_node($post_id, $fbuid);
+    if ($inserted) {
+      $result = array('status' => true, 'api_status' => 'passed');
+    }
+    else {
+      $result = array('status' => false, 'api_status' => 'failed');
+    }
+    $result['operation'] = 'insert';
+  }
+    print drupal_json($result);
+    return ;
+  /*$fb_session = json_encode($_POST['fb_session']);
+  _insert_fbuid_to_node($post_id);
+  */
+}
+
+function _insert_fbuid_to_node($post_id, $fbuid) {
+  $delta = _get_delta_from_post_id($post_id, $fbuid);
+  if ($delta == FALSE) {
+    //insert
+    $node = _get_node_from_facebook_post_id($post_id);
+    $max_delta  = db_result(db_query('SELECT MAX(delta)+1 FROM {content_field_fbuid_vote}'));
+    $inserted = db_query("INSERT INTO {content_field_fbuid_vote} (vid, nid, delta, field_fbuid_vote_value) VALUES (%d, %d, %d, '%s')", $node->nid, $node->vid, $max_delta, $fbuid);
+    }
+  return $inserted;
+}
+
+function _remove_fbuid_from_node($nid, $delta, $fbuid) {
+    $removed = db_query("DELETE FROM {content_field_fbuid_vote} WHERE nid=%d AND delta=%d AND field_fbuid_vote_value='%s'",
+        $nid, $delta, $fbuid);
+    return $removed;
 }

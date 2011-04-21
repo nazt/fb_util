@@ -56,7 +56,7 @@ window.generate_result = function(range_begin, range_end) {
         var created = new Date(post.created_time * 1000);
         var picture = "http://graph.facebook.com/" + post.actor_id + "/picture";
 
-        jQuery.getJSON('/facebook/util/getnode/' + post.post_id, function(res) {
+        jQuery.getJSON('/facebook/util/getnodeterm/' + post.post_id, function(res) {
           var category = '';
           if (res.length>0) {
             var item = generate_item(picture, post, actor, created);
@@ -99,7 +99,7 @@ window.generate_item = function(picture, post, actor, created) {
             </div>\
             <div class='item-message'>" + post.message + "</div>\ <div class='item-permalink'><!--link: <a href='" + post.permalink + "'>" + post.permalink + "</a> !--></div>\ </div>\
         <div class='item-like'> \
-          <span class='item-like-count'>" + post.likes.count + "</span>\
+          <span class='item-like-count'>" + '-' + "</span>\
           <span class='item-like-button'></span>\
         </div>\
         <div style='clear:both'></div>\
@@ -111,9 +111,46 @@ window.generate_item = function(picture, post, actor, created) {
     }
 
   }
+  prepare_function_is_like_text(post.post_id)();
+  prepare_function_vote_number(post.post_id)();
+  //console.log('i do');
+
   return item;
 }
 
+function prepare_function_vote_number(post_id) {
+  var fbuid = FB.getSession().uid;
+  var request_path = '/facebook/util/vote/get/'+post_id;
+  return function() {
+    jQuery.getJSON(request_path, function(json) {
+        var votenum = json && json.votenum;
+        var selector = '.user-idea[post_id='+post_id+'] .item-like > .item-like-count';
+        console.log('json', json);
+        if (votenum == 0) {
+          $(selector).html('0');
+        }
+        else {
+          $(selector).html(votenum);
+        }
+    });
+  };
+}
+function prepare_function_is_like_text(post_id) {
+  var fbuid = FB.getSession().uid;
+  var request_path = '/facebook/util/delta/get/'+post_id+'/'+fbuid;
+  return function() {
+    jQuery.getJSON(request_path, function(json) {
+        var isLike = json && json.delta;
+        var selector = '.user-idea[post_id='+post_id+'] .item-like > .item-like-button';
+        if (isLike === false) {
+          $(selector).html('not Like yet');
+        }
+        else {
+          $(selector).addClass('liked').html('Liked');
+        }
+    });
+  };
+}
 window.today = function() {
   var d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -152,7 +189,8 @@ window.fbAsyncInit = function() {
       if(typeof(console) !== 'undefined' && console != null) {
         console.log('redirect');
       }
-      var login_url = "http://vacation.opendream.in.th/?scope=email,user_birthday&client_id=" + Drupal.settings.fb_util.appid +"&redirect_uri=http://vacation.opendream.in.th/facebook/util/verify.php&response_type=code_and_token&display=page";
+      var login_url = "http://www.facebook.com/dialog/oauth/?scope=publish_stream,email,user_birthday&client_id=" + Drupal.settings.fb_util.appid +"&redirect_uri=http://vacation.opendream.in.th/facebook/util/verify&response_type=code_and_token&display=page";
+
       top.window.location.href = login_url;
     }
   });
@@ -193,4 +231,41 @@ $('.category-item').live('click', function(e) {
     $('.category-item').removeClass('active');
     self.addClass('active');
     $(user_idea_selector).show();
+});
+
+$('.item-like-button').live('click', function(e) {
+  var self = $(this);
+  var li = self.parent().parent('li');
+  self.toggleClass('liked');
+  var friend = self.siblings('.item-like-count').eq(0);
+  if (self.is('.liked')) {
+    if(typeof(console) !== 'undefined' && console != null) {
+      console.log('++', friend.html(parseInt(friend.html())+1));
+    }
+  }
+  else {
+    if(typeof(console) !== 'undefined' && console != null) {
+      console.log('--', friend.html(parseInt(friend.html())-1));
+    }
+  }
+  var post_id = li.attr('post_id');
+  if(typeof(console) !== 'undefined' && console != null) {
+    jQuery.post('/facebook/util/vote/toggle/'+post_id, { fb_session: JSON.stringify(FB.getSession()) }, function(res) {
+      var json_obj = JSON.parse(res);
+      var _status = json_obj && json_obj['status'];
+      if(typeof(console) !== 'undefined' && console != null) {
+        console.log('_status = ', _status, res);
+      }
+      if (_status == true) {
+        self.removeClass('liked');
+        self.addClass('liked');
+        self.html('LIKED');
+      }
+      else {
+        self.removeClass('liked');
+        self.html('not Like');
+      }
+
+    });
+  }
 });
