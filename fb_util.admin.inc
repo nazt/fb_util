@@ -35,3 +35,29 @@ function fb_util_settings_form() {
 
   return system_settings_form($form);
 }
+
+function manage_contest_form() {
+  $form['header'] = array(
+      '#value' => t('<h2>Manage Idea Contest Settings</h2>'),
+    );
+
+  $form['fb_contest_started'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Show only promoted ideas.'),
+      '#description' =>  '',
+      '#default_value' => variable_get('fb_contest_started', false),
+  );
+
+  $form['div_open_'] = array(
+      '#value' => '<div class=jump-to-select>',
+  );
+
+  $form['link_to_select_idea'] = array(
+      '#value' => l(t('Go to select idea page.'),  'admin/content/idea/manage'),
+    );
+
+  $form['div_close_'] = array(
+      '#value' => '</div>',
+  );
+  return system_settings_form($form);
+}

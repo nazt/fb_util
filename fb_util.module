@@ -7,6 +7,13 @@ function fb_util_init() {
 }
 
 /**
+  * Implementation of hook_perm()
+  */
+function fb_util_perm() {
+  return array('administer contest date');;
+}
+
+/**
  * Implementation of hook_menu().
  */
 function fb_util_menu() {
@@ -18,6 +25,17 @@ function fb_util_menu() {
       'access arguments' => array('administer site configuration'),
       'type' => MENU_NORMAL_ITEM,
       'file' => 'fb_util.admin.inc'
+  );
+
+
+  $items['admin/content/idea/settings'] = array(
+      'title' => t('Manage Idea Contest Settings'),
+      'description' => t('Allow for user vote'),
+      'access arguments' => array('administer contest date'),
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('manage_contest_form'),
+      'type' => MENU_NORMAL_ITEM,
+      'file' => 'fb_util.admin.inc',
   );
 
   $items['facebook/util/category/list'] = array(
@@ -115,7 +133,8 @@ function fb_util_menu() {
 function post_idea() {
   $app_secret = variable_get('fb_util_app_secret_key', '');
   $fb_session = json_decode($_POST['fb_util_data'], TRUE);
-  $fbuid = $fb_sesson->uid;
+  $fb_post_object = json_decode($_POST['fb_post_object']);
+  $fbuid = $fb_session->uid;
   $validated_session = validate_facebook_session($fb_session, $app_secret);
   $fb_drupal = json_decode($_POST['fb_util_drupal']);
   if ($validated_session) {
@@ -124,13 +143,14 @@ function post_idea() {
     $node = $orig;
     $node->type = 'idea';
     $node->body = $fb_drupal->message;
-    $node->title = $validated_session['uid'];
+    $node->title = $fb_post_object->from->name;
     $node->field_fbuid[0]['value'] = $validated_session['uid'];
     $node->field_facebook_post_id[0]['value'] = $fb_drupal->post_id;
     $node->field_facebook_session[0]['value'] = $_POST['fb_util_data'];
     $node->field_facebook_post_object[0]['value'] = $_POST['fb_post_object'];
     $node->taxonomy = array($tid => taxonomy_get_term($tid));
 
+    $node->field_fb_name[0]['value'] = $fb_post_object->from->name;
     node_save($node);
 
     if ($node->changed != $orig->changed) {
@@ -226,13 +246,19 @@ function select_nodes_by_content_type_not_in_vocabulary($vocab_id, $content_type
 */
 
 function verify_js() {
-  Header('Location: http://www.facebook.com/happyschoolbreak?sk=app_210101249007908');
+  Header('Location: http://www.facebook.com/happyschoolbreak?sk=app_168099556581644');
   return;
 }
 
 function get_node_term_from_facebook_post_id($post_id) {
   $node_status_code = 1;
-  $query = sprintf("SELECT node.nid AS nid FROM node node  LEFT JOIN content_type_idea node_data_field_facebook_post_id ON node.vid = node_data_field_facebook_post_id.vid WHERE (node_data_field_facebook_post_id.field_facebook_post_id_value) = ('%s') AND node.status = %d", $post_id, $node_status_code);
+  $is_contest_started = variable_get('fb_contest_started', false);
+  if ($is_contest_started == false) {
+    $query = sprintf("SELECT node.nid AS nid FROM node node  LEFT JOIN content_type_idea node_data_field_facebook_post_id ON node.vid = node_data_field_facebook_post_id.vid WHERE (node_data_field_facebook_post_id.field_facebook_post_id_value) = ('%s') AND node.status = %d", $post_id, $node_status_code);
+  }
+  else {
+    $query = sprintf("SELECT node.nid AS nid FROM node node  LEFT JOIN content_type_idea node_data_field_facebook_post_id ON node.vid = node_data_field_facebook_post_id.vid WHERE (node_data_field_facebook_post_id.field_facebook_post_id_value) = ('%s') AND (node.status=%d AND node.promote=1)", $post_id, $node_status_code);
+  }
   $nid = db_result(db_query($query));
   $node = node_load($nid);
   $term = taxonomy_node_get_terms($node);
@@ -242,14 +268,13 @@ function get_node_term_from_facebook_post_id($post_id) {
 
 function page_get_node_from_facebook_post_id($post_id) {
   $node = _get_node_from_facebook_post_id($post_id);
-  _get_delta_from_post_id($post_id, '8910');
   drupal_json(($node));
   return;
 }
 
 function _get_node_from_facebook_post_id($post_id) {
   $node_status_code = 1;
-  $query = sprintf("SELECT node.vid AS vid, node.nid AS nid FROM node node  LEFT JOIN content_type_idea node_data_field_facebook_post_id ON node.vid = node_data_field_facebook_post_id.vid WHERE (node_data_field_facebook_post_id.field_facebook_post_id_value) = ('%s') AND node.status = %d", $post_id, $node_status_code);
+  $query = sprintf("SELECT node.vid AS vid, node.nid AS nid FROM node node  LEFT JOIN content_type_idea node_data_field_facebook_post_id ON node.vid = node_data_field_facebook_post_id.vid WHERE (node_data_field_facebook_post_id.field_facebook_post_id_value) = ('%s') AND node.status = %d ", $post_id, $node_status_code);
   $r = db_query($query);
   $node = db_fetch_object($r);
   //print get_delta_from_nid_fbuid($node->nid, '8910');
@@ -269,7 +294,6 @@ function _get_delta_from_post_id($post_id, $fbuid) {
 
 function page_get_delta_from_post_id($post_id, $fbuid) {
   drupal_set_header('Content-Type: application/json; charset=utf-8');
-  //_insert_fbuid_to_node($post_id, $fbuid);
   _get_vote_number_from_post_id($post_id);
   drupal_json(array('delta' => _get_delta_from_post_id($post_id, $fbuid)));
   return;
@@ -298,27 +322,34 @@ function page_toggle_vote_number_from_post_id($post_id) {
   $fb_session = json_decode($_POST['fb_session']);
   $fbuid = $fb_session->uid;
 
+  $app_secret = variable_get('fb_util_app_secret_key', '');
+  $fb_post_object = json_decode($_POST['fb_post_object']);
+  $validated_session = validate_facebook_session((array)$fb_session, $app_secret);
+
   $result = array();
 
+  if ($validated_session == NULL) {
+    return drupal_json(array('status' => 'visible', 'api_status' => 'failed'));
+  }
   //Liked
   $delta = _get_delta_from_post_id($post_id, $fbuid);
   if ($delta) {
     $node = _get_node_from_facebook_post_id($post_id);
     if (_remove_fbuid_from_node($node->nid, $delta, $fbuid)) {
-      $result = array('status' => false, 'api_status' => 'passed');
+      $result = array('status' => 'hidden', 'api_status' => 'passed');
     }
     else {
-      $result = array('status' => true, 'api_status' => 'failed');
+      $result = array('status' => 'visible', 'api_status' => 'failed');
     }
     $result['operation'] = 'remove';
   }
   else {
     $inserted = _insert_fbuid_to_node($post_id, $fbuid);
     if ($inserted) {
-      $result = array('status' => true, 'api_status' => 'passed');
+      $result = array('status' => 'visible', 'api_status' => 'passed');
     }
     else {
-      $result = array('status' => false, 'api_status' => 'failed');
+      $result = array('status' => 'hidden', 'api_status' => 'failed');
     }
     $result['operation'] = 'insert';
   }

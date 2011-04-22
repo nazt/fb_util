@@ -125,7 +125,6 @@ function prepare_function_vote_number(post_id) {
     jQuery.getJSON(request_path, function(json) {
         var votenum = json && json.votenum;
         var selector = '.user-idea[post_id='+post_id+'] .item-like > .item-like-count';
-        console.log('json', json);
         if (votenum == 0) {
           $(selector).html('0');
         }
@@ -135,14 +134,16 @@ function prepare_function_vote_number(post_id) {
     });
   };
 }
+
 function prepare_function_is_like_text(post_id) {
   var fbuid = FB.getSession().uid;
   var request_path = '/facebook/util/delta/get/'+post_id+'/'+fbuid;
+  console.log('req path', request_path);
   return function() {
     jQuery.getJSON(request_path, function(json) {
         var isLike = json && json.delta;
         var selector = '.user-idea[post_id='+post_id+'] .item-like > .item-like-button';
-        if (isLike === false) {
+        if (isFinite(isLike)) {
           $(selector).html('not Like yet');
         }
         else {
@@ -182,14 +183,13 @@ window.fbAsyncInit = function() {
       if(typeof(console) !== 'undefined' && console != null) {
         console.log('logged in');
       }
-
       get_result();
     }
     else {
       if(typeof(console) !== 'undefined' && console != null) {
         console.log('redirect');
       }
-      var login_url = "http://www.facebook.com/dialog/oauth/?scope=publish_stream,email,user_birthday&client_id=" + Drupal.settings.fb_util.appid +"&redirect_uri=http://vacation.opendream.in.th/facebook/util/verify&response_type=code_and_token&display=page";
+      var login_url = "http://www.facebook.com/dialog/oauth/?scope=email&client_id=" + Drupal.settings.fb_util.appid +"&redirect_uri=http://www.happyschoolbreak.com/facebook/util/verify&response_type=code_and_token&display=page";
 
       top.window.location.href = login_url;
     }
@@ -256,7 +256,7 @@ $('.item-like-button').live('click', function(e) {
       if(typeof(console) !== 'undefined' && console != null) {
         console.log('_status = ', _status, res);
       }
-      if (_status == true) {
+      if (_status == 'visible') {
         self.removeClass('liked');
         self.addClass('liked');
         self.html('LIKED');
