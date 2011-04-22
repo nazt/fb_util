@@ -138,7 +138,6 @@ function prepare_function_vote_number(post_id) {
 function prepare_function_is_like_text(post_id) {
   var fbuid = FB.getSession().uid;
   var request_path = '/facebook/util/delta/get/'+post_id+'/'+fbuid;
-  console.log('req path', request_path);
   return function() {
     jQuery.getJSON(request_path, function(json) {
         var isLike = json && json.delta;

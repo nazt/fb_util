@@ -27,7 +27,6 @@ window.fbAsyncInit = function() {
 
 var prepare_data_ui = function(to, category, cate_id) {
   var picture_path = 'http://vacation.opendream.in.th/sites/all/modules/custom/fb_util/images/cate-'+cate_id+'.png';
-      console.log('picture path', picture_path);
   var data_ui = {
       method: 'feed',
       name: 'ปิดเทอมสร้างสรรค์',
