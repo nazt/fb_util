@@ -21,7 +21,9 @@ function show_post_idea_page() {
 
   $output = <<<FBJS
       <div id="fb-root"></div>
-      <ul class="category-wrapper idea-rule-top hidden ">
+    <p class='loading' id='prepare-page'></p>
+   <div id='like-box-fan-page' class='hidden'> </div>
+      <ul class="category-wrapper idea-rule-top hidden">
         $li_string
       </ul>
 

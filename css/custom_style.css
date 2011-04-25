@@ -35,7 +35,7 @@ ul.category-wrapper li a {
   margin: 0 0 0 140px
 }
 
-.cate-221 a { 
+.cate-221 a {
   background: url(../images/btn-01.jpg) no-repeat
 }
 
@@ -55,7 +55,7 @@ ul.category-wrapper li a {
   background: url(../images/btn-05.jpg) no-repeat;
 }
 
-ul.category-wrapper .cate-221 a:hover { 
+ul.category-wrapper .cate-221 a:hover {
   background: url(../images/btn-01_hover.jpg) no-repeat
 }
 
@@ -75,4 +75,6 @@ ul.category-wrapper .cate-225 a:hover {
   background: url(../images/btn-05_hover.jpg) no-repeat;
 }
 
-
+.hidden {
+  display: none;
+}

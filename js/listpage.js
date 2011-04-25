@@ -1,5 +1,7 @@
 
 window.get_result = function () {
+  $('#prepare-page').remove();
+  $('#like-count').show();
   $('#results').html('<p class="loading">Please wait, processing ...</p>');
 /*
   var range_begin = $('#date-begin').datepicker('getDate').getTime();
@@ -70,7 +72,7 @@ window.generate_result = function(range_begin, range_end) {
           else {
             item = "";
             jQuery('li[post_id='+post.post_id+']').remove();
-            if(typeof(console) !== 'undefined' && console != null) {
+            if(DEBUG && typeof(console) !== 'undefined' && console != null) {
               console.log('Problem', post);
             }
           }
@@ -106,7 +108,7 @@ window.generate_item = function(picture, post, actor, created) {
       </li>";
   }// try
   catch (err) {
-    if(typeof(console) !== 'undefined' && console != null) {
+    if(DEBUG && typeof(console) !== 'undefined' && console != null) {
       console.log(err);
     }
 
@@ -126,10 +128,10 @@ function prepare_function_vote_number(post_id) {
         var votenum = json && json.votenum;
         var selector = '.user-idea[post_id='+post_id+'] .item-like > .item-like-count';
         if (votenum == 0) {
-          $(selector).html('0');
+          //$(selector).html('0');
         }
         else {
-          $(selector).html(votenum);
+          //$(selector).html(votenum);
         }
     });
   };
@@ -167,7 +169,7 @@ window.now = function() {
 window.ndaysago = function(n) {
   return new Date(today().getTime() - n*86400000);
 }
-
+window.DEBUG = false;
 window.fbAsyncInit = function() {
   // Init facebook sdk.
   FB.init({
@@ -179,13 +181,13 @@ window.fbAsyncInit = function() {
   FB.Canvas.setAutoResize(91);
   FB.getLoginStatus(function(response) {
     if (response.session) {
-      if(typeof(console) !== 'undefined' && console != null) {
+      if(DEBUG && typeof(console) !== 'undefined' && console != null) {
         console.log('logged in');
       }
       get_result();
     }
     else {
-      if(typeof(console) !== 'undefined' && console != null) {
+      if(DEBUG && typeof(console) !== 'undefined' && console != null) {
         console.log('redirect');
       }
       var login_url = "http://www.facebook.com/dialog/oauth/?scope=email&client_id=" + Drupal.settings.fb_util.appid +"&redirect_uri=http://www.happyschoolbreak.com/facebook/util/verify&response_type=code_and_token&display=page";
@@ -195,16 +197,15 @@ window.fbAsyncInit = function() {
   });
 };
 
-(function() {
-  var e = document.createElement('script'); e.async = true;
-  e.src = document.location.protocol +
-    '//connect.facebook.net/en_US/all.js';
-  jQuery(document).ready(function() {
-    document.getElementById('fb-root').appendChild(e);
-  });
-}());
 
 jQuery(document).ready(function ($) {
+  jQuery('#like-count').hide();
+  (function() {
+    var e = document.createElement('script'); e.async = true;
+    e.src = document.location.protocol +
+      '//connect.facebook.net/en_US/all.js';
+      document.getElementById('fb-root').appendChild(e);
+  }());
 /*
   $('#date-begin, #date-end').datepicker({
     showButtonPanel : false,
@@ -238,21 +239,21 @@ $('.item-like-button').live('click', function(e) {
   self.toggleClass('liked');
   var friend = self.siblings('.item-like-count').eq(0);
   if (self.is('.liked')) {
-    if(typeof(console) !== 'undefined' && console != null) {
+    if(DEBUG && typeof(console) !== 'undefined' && console != null) {
       console.log('++', friend.html(parseInt(friend.html())+1));
     }
   }
   else {
-    if(typeof(console) !== 'undefined' && console != null) {
+    if(DEBUG && typeof(console) !== 'undefined' && console != null) {
       console.log('--', friend.html(parseInt(friend.html())-1));
     }
   }
   var post_id = li.attr('post_id');
-  if(typeof(console) !== 'undefined' && console != null) {
+  if(DEBUG && typeof(console) !== 'undefined' && console != null) {
     jQuery.post('/facebook/util/vote/toggle/'+post_id, { fb_session: JSON.stringify(FB.getSession()) }, function(res) {
       var json_obj = JSON.parse(res);
       var _status = json_obj && json_obj['status'];
-      if(typeof(console) !== 'undefined' && console != null) {
+      if(DEBUG && typeof(console) !== 'undefined' && console != null) {
         console.log('_status = ', _status, res);
       }
       if (_status == 'visible') {
