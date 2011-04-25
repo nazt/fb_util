@@ -35,7 +35,7 @@ window.generate_result = function(range_begin, range_end) {
       "ORDER BY created_time DESC " +
     "LIMIT 256";
 
-  var posts = FB.Data.query(query, '220551554627180');
+  var posts = FB.Data.query(query, Drupal.settings.fb_util.pageid);
   var users = FB.Data.query(
      "SELECT uid, name " +
      "FROM user " +
@@ -121,20 +121,22 @@ window.generate_item = function(picture, post, actor, created) {
 function prepare_function_vote_number(post_id) {
   var fbuid = FB.getSession().uid;
   var request_path = '/facebook/util/vote/get/'+post_id;
+  console.log(request_path);
   return function() {
     jQuery.getJSON(request_path, function(json) {
         var votenum = json && json.votenum;
         var selector = '.user-idea[post_id='+post_id+'] .item-like > .item-like-count';
-        console.log('json', json);
-        if (votenum == 0) {
+        if (votenum === 0) {
           $(selector).html('0');
         }
         else {
           $(selector).html(votenum);
         }
+        console.log('votenum', votenum);
     });
   };
 }
+
 function prepare_function_is_like_text(post_id) {
   var fbuid = FB.getSession().uid;
   var request_path = '/facebook/util/delta/get/'+post_id+'/'+fbuid;
@@ -142,11 +144,12 @@ function prepare_function_is_like_text(post_id) {
     jQuery.getJSON(request_path, function(json) {
         var isLike = json && json.delta;
         var selector = '.user-idea[post_id='+post_id+'] .item-like > .item-like-button';
-        if (isLike === false) {
-          $(selector).html('not Like yet');
+        console.log('isLike', isLike);
+        if (isFinite(isLike)) {
+          $(selector).addClass('liked').html('Liked');
         }
         else {
-          $(selector).addClass('liked').html('Liked');
+          $(selector).html('not Like yet');
         }
     });
   };
@@ -182,14 +185,13 @@ window.fbAsyncInit = function() {
       if(typeof(console) !== 'undefined' && console != null) {
         console.log('logged in');
       }
-
       get_result();
     }
     else {
       if(typeof(console) !== 'undefined' && console != null) {
         console.log('redirect');
       }
-      var login_url = "http://www.facebook.com/dialog/oauth/?scope=publish_stream,email,user_birthday&client_id=" + Drupal.settings.fb_util.appid +"&redirect_uri=http://vacation.opendream.in.th/facebook/util/verify&response_type=code_and_token&display=page";
+      var login_url = "http://www.facebook.com/dialog/oauth/?scope=email&client_id=" + Drupal.settings.fb_util.appid +"&redirect_uri=http://vacation.opendream.in.th/facebook/util/verify&response_type=code_and_token&display=page";
 
       top.window.location.href = login_url;
     }
@@ -238,14 +240,15 @@ $('.item-like-button').live('click', function(e) {
   var li = self.parent().parent('li');
   self.toggleClass('liked');
   var friend = self.siblings('.item-like-count').eq(0);
+  friend.html('?');
   if (self.is('.liked')) {
     if(typeof(console) !== 'undefined' && console != null) {
-      console.log('++', friend.html(parseInt(friend.html())+1));
+      console.log('++' /*, friend.html(parseInt(friend.html())+1)*/);
     }
   }
   else {
     if(typeof(console) !== 'undefined' && console != null) {
-      console.log('--', friend.html(parseInt(friend.html())-1));
+      console.log('--' /*, friend.html(parseInt(friend.html())-1)*/);
     }
   }
   var post_id = li.attr('post_id');
@@ -256,7 +259,7 @@ $('.item-like-button').live('click', function(e) {
       if(typeof(console) !== 'undefined' && console != null) {
         console.log('_status = ', _status, res);
       }
-      if (_status == true) {
+      if (_status == 'voted') {
         self.removeClass('liked');
         self.addClass('liked');
         self.html('LIKED');
@@ -265,7 +268,7 @@ $('.item-like-button').live('click', function(e) {
         self.removeClass('liked');
         self.html('not Like');
       }
-
+      prepare_function_vote_number(post_id)();
     });
   }
 });

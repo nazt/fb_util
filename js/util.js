@@ -25,13 +25,15 @@ window.fbAsyncInit = function() {
   });
 }
 
-var prepare_data_ui = function(to, category) {
+var prepare_data_ui = function(to, category, cate_id) {
+  var picture_path = 'http://vacation.opendream.in.th/sites/all/modules/custom/fb_util/images/cate-'+cate_id+'.png';
+      console.log('picture path', picture_path);
   var data_ui = {
       method: 'feed',
       name: 'ปิดเทอมสร้างสรรค์',
       link: 'http://www.happyschoolbreak.com/',
-      picture: 'http://fbrell.com/f8.jpg',
-      caption: 'Category: '+ category,
+      picture: picture_path,
+      caption: 'หมวดหมู่: '+ category,
       message: 'Enter your idea!',
       description: ' ',
       to: to
@@ -51,7 +53,7 @@ $('.category-item').live('click', function(e) {
   }
   var category = self.html();
   var post_to = Drupal.settings.fb_util.pageid || '153305968014537';
-  var data_ui = prepare_data_ui(post_to, category);
+  var data_ui = prepare_data_ui(post_to, category, self.attr('tid'));
   var session_string = JSON.stringify(FB.getSession());
   var tid = self.attr('tid');
   if(typeof(console) !== 'undefined' && console != null) {

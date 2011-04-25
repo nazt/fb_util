@@ -115,7 +115,8 @@ function fb_util_menu() {
 function post_idea() {
   $app_secret = variable_get('fb_util_app_secret_key', '');
   $fb_session = json_decode($_POST['fb_util_data'], TRUE);
-  $fbuid = $fb_sesson->uid;
+  $fb_post_object = json_decode($_POST['fb_post_object']);
+  $fbuid = $fb_session->uid;
   $validated_session = validate_facebook_session($fb_session, $app_secret);
   $fb_drupal = json_decode($_POST['fb_util_drupal']);
   if ($validated_session) {
@@ -131,6 +132,7 @@ function post_idea() {
     $node->field_facebook_post_object[0]['value'] = $_POST['fb_post_object'];
     $node->taxonomy = array($tid => taxonomy_get_term($tid));
 
+    $node->field_fb_name[0]['value'] = $fb_post_object->from->name;
     node_save($node);
 
     if ($node->changed != $orig->changed) {
@@ -269,7 +271,6 @@ function _get_delta_from_post_id($post_id, $fbuid) {
 
 function page_get_delta_from_post_id($post_id, $fbuid) {
   drupal_set_header('Content-Type: application/json; charset=utf-8');
-  //_insert_fbuid_to_node($post_id, $fbuid);
   _get_vote_number_from_post_id($post_id);
   drupal_json(array('delta' => _get_delta_from_post_id($post_id, $fbuid)));
   return;
@@ -298,32 +299,40 @@ function page_toggle_vote_number_from_post_id($post_id) {
   $fb_session = json_decode($_POST['fb_session']);
   $fbuid = $fb_session->uid;
 
+  $app_secret = variable_get('fb_util_app_secret_key', '');
+  $fb_post_object = json_decode($_POST['fb_post_object']);
+  $validated_session = validate_facebook_session((array)$fb_session, $app_secret);
+
   $result = array();
 
+  if ($validated_session == NULL) {
+    return drupal_json(array('status' => 'unvote', 'api_status' => 'failed'));
+  }
   //Liked
   $delta = _get_delta_from_post_id($post_id, $fbuid);
   if ($delta) {
     $node = _get_node_from_facebook_post_id($post_id);
     if (_remove_fbuid_from_node($node->nid, $delta, $fbuid)) {
-      $result = array('status' => false, 'api_status' => 'passed');
+      $result = array('status' => 'unvote', 'api_status' => 'passed');
     }
     else {
-      $result = array('status' => true, 'api_status' => 'failed');
+      $result = array('status' => 'voted', 'api_status' => 'failed');
     }
     $result['operation'] = 'remove';
   }
   else {
     $inserted = _insert_fbuid_to_node($post_id, $fbuid);
     if ($inserted) {
-      $result = array('status' => true, 'api_status' => 'passed');
+      $result = array('status' => 'voted', 'api_status' => 'passed');
     }
     else {
-      $result = array('status' => false, 'api_status' => 'failed');
+      $result = array('status' => 'unvote', 'api_status' => 'failed');
     }
     $result['operation'] = 'insert';
   }
-    print drupal_json($result);
-    return ;
+  cache_clear_all('*', 'cache_content', TRUE);
+  print drupal_json($result);
+  return ;
   /*$fb_session = json_encode($_POST['fb_session']);
   _insert_fbuid_to_node($post_id);
   */
