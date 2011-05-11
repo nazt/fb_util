@@ -7,6 +7,13 @@ function fb_util_init() {
 }
 
 /**
+  * Implementation of hook_perm()
+  */
+function fb_util_perm() {
+  return array('administer contest date');;
+}
+
+/**
  * Implementation of hook_menu().
  */
 function fb_util_menu() {
@@ -20,6 +27,17 @@ function fb_util_menu() {
       'file' => 'fb_util.admin.inc'
   );
 
+
+  $items['admin/content/idea/settings'] = array(
+      'title' => t('Idea Contest Settings'),
+      'description' => t('Allow for user vote'),
+      'access arguments' => array('administer contest date'),
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('manage_contest_form'),
+      'type' => MENU_NORMAL_ITEM,
+      'file' => 'fb_util.admin.inc',
+  );
+
   $items['facebook/util/category/list'] = array(
     'title' => t('List Category'),
     'page callback' => 'list_category',
@@ -27,6 +45,12 @@ function fb_util_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $items['facebook/util/get_contest_start'] = array(
+      'title' => t('Get contest start'),
+      'page callback' => 'get_contest_started',
+      'access arguments' => array('access content'),
+      'type' => MENU_CALLBACK,
+  );
   $items['facebook/util/idea/list'] = array(
       'title' => t('List Idea Utility'),
       'page callback' => 'list_idea_util',
@@ -36,7 +60,7 @@ function fb_util_menu() {
 
   $item_tmp = $items['facebook/util/idea/list'];
   $item_tmp['page arguments'] = array(4);
-  $items['facebook/util/idea/list%'] = $item_tmp;
+  $items['facebook/util/idea/list/%'] = $item_tmp;
 
 
   $items['facebook/page/idea/list'] = array(
@@ -125,7 +149,7 @@ function post_idea() {
     $node = $orig;
     $node->type = 'idea';
     $node->body = $fb_drupal->message;
-    $node->title = $validated_session['uid'];
+    $node->title = $fb_post_object->from->name;
     $node->field_fbuid[0]['value'] = $validated_session['uid'];
     $node->field_facebook_post_id[0]['value'] = $fb_drupal->post_id;
     $node->field_facebook_session[0]['value'] = $_POST['fb_util_data'];
@@ -228,13 +252,24 @@ function select_nodes_by_content_type_not_in_vocabulary($vocab_id, $content_type
 */
 
 function verify_js() {
-  Header('Location: http://www.facebook.com/happyschoolbreak?sk=app_210101249007908');
+  Header('Location: http://www.facebook.com/happyschoolbreak?sk=app_168099556581644');
   return;
 }
 
+function get_contest_started() {
+  $status = variable_get('fb_contest_started', false);
+  $_ret =  drupal_json(array('status' => $status));
+  return $_ret;
+}
 function get_node_term_from_facebook_post_id($post_id) {
   $node_status_code = 1;
-  $query = sprintf("SELECT node.nid AS nid FROM node node  LEFT JOIN content_type_idea node_data_field_facebook_post_id ON node.vid = node_data_field_facebook_post_id.vid WHERE (node_data_field_facebook_post_id.field_facebook_post_id_value) = ('%s') AND node.status = %d", $post_id, $node_status_code);
+  $is_contest_started = variable_get('fb_contest_started', false);
+  if ($is_contest_started == false) {
+    $query = sprintf("SELECT node.nid AS nid FROM node node  LEFT JOIN content_type_idea node_data_field_facebook_post_id ON node.vid = node_data_field_facebook_post_id.vid WHERE (node_data_field_facebook_post_id.field_facebook_post_id_value) = ('%s') AND node.status = %d", $post_id, $node_status_code);
+  }
+  else {
+    $query = sprintf("SELECT node.nid AS nid FROM node node  LEFT JOIN content_type_idea node_data_field_facebook_post_id ON node.vid = node_data_field_facebook_post_id.vid WHERE (node_data_field_facebook_post_id.field_facebook_post_id_value) = ('%s') AND (node.status=%d AND node.promote=1)", $post_id, $node_status_code);
+  }
   $nid = db_result(db_query($query));
   $node = node_load($nid);
   $term = taxonomy_node_get_terms($node);
@@ -244,14 +279,13 @@ function get_node_term_from_facebook_post_id($post_id) {
 
 function page_get_node_from_facebook_post_id($post_id) {
   $node = _get_node_from_facebook_post_id($post_id);
-  _get_delta_from_post_id($post_id, '8910');
   drupal_json(($node));
   return;
 }
 
 function _get_node_from_facebook_post_id($post_id) {
   $node_status_code = 1;
-  $query = sprintf("SELECT node.vid AS vid, node.nid AS nid FROM node node  LEFT JOIN content_type_idea node_data_field_facebook_post_id ON node.vid = node_data_field_facebook_post_id.vid WHERE (node_data_field_facebook_post_id.field_facebook_post_id_value) = ('%s') AND node.status = %d", $post_id, $node_status_code);
+  $query = sprintf("SELECT node.vid AS vid, node.nid AS nid FROM node node  LEFT JOIN content_type_idea node_data_field_facebook_post_id ON node.vid = node_data_field_facebook_post_id.vid WHERE (node_data_field_facebook_post_id.field_facebook_post_id_value) = ('%s') AND node.status = %d ", $post_id, $node_status_code);
   $r = db_query($query);
   $node = db_fetch_object($r);
   //print get_delta_from_nid_fbuid($node->nid, '8910');
@@ -305,7 +339,8 @@ function page_toggle_vote_number_from_post_id($post_id) {
 
   $result = array();
 
-  if ($validated_session == NULL) {
+  $_contest_status = variable_get('fb_contest_started', false);
+  if ($validated_session == NULL || $_contest_status == false) {
     return drupal_json(array('status' => 'unvote', 'api_status' => 'failed'));
   }
   //Liked
@@ -330,9 +365,9 @@ function page_toggle_vote_number_from_post_id($post_id) {
     }
     $result['operation'] = 'insert';
   }
-  cache_clear_all('*', 'cache_content', TRUE);
-  print drupal_json($result);
-  return ;
+    cache_clear_all('*', 'cache_content', TRUE);
+    print drupal_json($result);
+    return ;
   /*$fb_session = json_encode($_POST['fb_session']);
   _insert_fbuid_to_node($post_id);
   */

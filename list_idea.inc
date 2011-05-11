@@ -23,6 +23,7 @@ function show_list_idea_page() {
 
   $output = <<<FBJS
     <div id="fb-root"></div>
+    <p class='loading' id='prepare-page'></p>
     <div id="like-count">
         <div class="msg-sort">
           <p class="msg-sort-label">หมวดหมู่:</p>

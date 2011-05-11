@@ -1,5 +1,8 @@
+window.DEBUG = false;
 
 window.get_result = function () {
+  $('#prepare-page').remove();
+  $('#like-count').show();
   $('#results').html('<p class="loading">Please wait, processing ...</p>');
 /*
   var range_begin = $('#date-begin').datepicker('getDate').getTime();
@@ -10,7 +13,7 @@ window.get_result = function () {
 
   generate_result(range_begin/1000, range_end/1000);
   */
-  generate_result(ndaysago(3).getTime()/1000, today().getTime()/1000);
+  generate_result(ndaysago(30).getTime()/1000, today().getTime()/1000);
 }
 window.post_id_list = [];
 window.create_post_id_to_check = function(list)  {
@@ -50,7 +53,6 @@ window.generate_result = function(range_begin, range_end) {
     });
 
     FB.Array.forEach(posts.value, function(post) {
-        //console.log(post, (post.message).substr(0, 20), post.likes.count);
       if (post.attachment != undefined) {
         var actor = user_list[post.actor_id];
         var created = new Date(post.created_time * 1000);
@@ -70,7 +72,7 @@ window.generate_result = function(range_begin, range_end) {
           else {
             item = "";
             jQuery('li[post_id='+post.post_id+']').remove();
-            if(typeof(console) !== 'undefined' && console != null) {
+            if(DEBUG && typeof(console) !== 'undefined' && console != null) {
               console.log('Problem', post);
             }
           }
@@ -106,7 +108,7 @@ window.generate_item = function(picture, post, actor, created) {
       </li>";
   }// try
   catch (err) {
-    if(typeof(console) !== 'undefined' && console != null) {
+    if(DEBUG && typeof(console) !== 'undefined' && console != null) {
       console.log(err);
     }
 
@@ -121,19 +123,27 @@ window.generate_item = function(picture, post, actor, created) {
 function prepare_function_vote_number(post_id) {
   var fbuid = FB.getSession().uid;
   var request_path = '/facebook/util/vote/get/'+post_id;
-  console.log(request_path);
   return function() {
-    jQuery.getJSON(request_path, function(json) {
-        var votenum = json && json.votenum;
+      jQuery.getJSON('/facebook/util/get_contest_start', function(res) {
         var selector = '.user-idea[post_id='+post_id+'] .item-like > .item-like-count';
-        if (votenum === 0) {
-          $(selector).html('0');
+        if (res['status'] !== 0 /*|| fbuid == '896050346'*/) {
+          if (fbuid == '896050346') {
+            console.log('YOU ARE EXCEPTION', 'get started = ', res);
+          }
+          jQuery.getJSON(request_path, function(json) {
+              var votenum = json && json.votenum;
+              if (votenum == 0) {
+                $(selector).html('0');
+              }
+              else {
+                $(selector).html(votenum);
+              }
+          });
         }
         else {
-          $(selector).html(votenum);
+          $(selector).html('-');
         }
-        console.log('votenum', votenum);
-    });
+      }); // get contest start
   };
 }
 
@@ -144,12 +154,11 @@ function prepare_function_is_like_text(post_id) {
     jQuery.getJSON(request_path, function(json) {
         var isLike = json && json.delta;
         var selector = '.user-idea[post_id='+post_id+'] .item-like > .item-like-button';
-        console.log('isLike', isLike);
         if (isFinite(isLike)) {
           $(selector).addClass('liked').html('Liked');
         }
         else {
-          $(selector).html('not Like yet');
+          $(selector).html('Not Like');
         }
     });
   };
@@ -170,7 +179,7 @@ window.now = function() {
 window.ndaysago = function(n) {
   return new Date(today().getTime() - n*86400000);
 }
-
+window.DEBUG = false;
 window.fbAsyncInit = function() {
   // Init facebook sdk.
   FB.init({
@@ -182,42 +191,34 @@ window.fbAsyncInit = function() {
   FB.Canvas.setAutoResize(91);
   FB.getLoginStatus(function(response) {
     if (response.session) {
-      if(typeof(console) !== 'undefined' && console != null) {
+      if(DEBUG && typeof(console) !== 'undefined' && console != null) {
         console.log('logged in');
       }
       get_result();
     }
     else {
-      if(typeof(console) !== 'undefined' && console != null) {
+      if(DEBUG && typeof(console) !== 'undefined' && console != null) {
         console.log('redirect');
       }
-      var login_url = "http://www.facebook.com/dialog/oauth/?scope=email&client_id=" + Drupal.settings.fb_util.appid +"&redirect_uri=http://vacation.opendream.in.th/facebook/util/verify&response_type=code_and_token&display=page";
+      var login_url = "http://www.facebook.com/dialog/oauth/?scope=email&client_id=" + Drupal.settings.fb_util.appid +"&redirect_uri=http://www.happyschoolbreak.com/facebook/util/verify&response_type=code_and_token&display=page";
 
       top.window.location.href = login_url;
     }
   });
 };
 
-(function() {
-  var e = document.createElement('script'); e.async = true;
-  e.src = document.location.protocol +
-    '//connect.facebook.net/en_US/all.js';
-  jQuery(document).ready(function() {
-    document.getElementById('fb-root').appendChild(e);
-  });
-}());
 
 jQuery(document).ready(function ($) {
-/*
-  $('#date-begin, #date-end').datepicker({
-    showButtonPanel : false,
-    dateFormat: "dd/mm/yy"
-  });
-  $('#date-begin').datepicker('setDate', ndaysago(2));
-  $('#date-end').datepicker('setDate', midnight());
-*/
+  jQuery('#like-count').hide();
+  (function() {
+    var e = document.createElement('script'); e.async = true;
+    e.src = document.location.protocol +
+      '//connect.facebook.net/en_US/all.js';
+      document.getElementById('fb-root').appendChild(e);
+  }());
 
   $('#get-result').click(function (e) {  });
+
 });
 
 $('.category-item').live('click', function(e) {
@@ -242,21 +243,21 @@ $('.item-like-button').live('click', function(e) {
   var friend = self.siblings('.item-like-count').eq(0);
   friend.html('?');
   if (self.is('.liked')) {
-    if(typeof(console) !== 'undefined' && console != null) {
-      console.log('++' /*, friend.html(parseInt(friend.html())+1)*/);
+    if(DEBUG && typeof(console) !== 'undefined' && console != null) {
+      //console.log('++', friend.html(parseInt(friend.html())+1));
     }
   }
   else {
-    if(typeof(console) !== 'undefined' && console != null) {
-      console.log('--' /*, friend.html(parseInt(friend.html())-1)*/);
+    if(DEBUG && typeof(console) !== 'undefined' && console != null) {
+      //console.log('--', friend.html(parseInt(friend.html())-1));
     }
   }
   var post_id = li.attr('post_id');
-  if(typeof(console) !== 'undefined' && console != null) {
+  if(DEBUG && typeof(console) !== 'undefined' && console != null) {
     jQuery.post('/facebook/util/vote/toggle/'+post_id, { fb_session: JSON.stringify(FB.getSession()) }, function(res) {
       var json_obj = JSON.parse(res);
       var _status = json_obj && json_obj['status'];
-      if(typeof(console) !== 'undefined' && console != null) {
+      if(DEBUG && typeof(console) !== 'undefined' && console != null) {
         console.log('_status = ', _status, res);
       }
       if (_status == 'voted') {
@@ -266,7 +267,7 @@ $('.item-like-button').live('click', function(e) {
       }
       else {
         self.removeClass('liked');
-        self.html('not Like');
+        self.html('Not Like');
       }
       prepare_function_vote_number(post_id)();
     });
